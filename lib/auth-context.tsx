@@ -44,6 +44,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     loadUser()
+
+    // Escuchar cambios en la sesión de Supabase
+    if (hasSupabaseConfig()) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (session?.user?.email) {
+          const supabaseUser = resolveUserByIdentifier(session.user.email)
+          if (supabaseUser) {
+            setUser(supabaseUser)
+          }
+        } else {
+          setUser(null)
+        }
+      })
+
+      return () => subscription.unsubscribe()
+    }
   }, [])
 
   const login = useCallback(async (identifier: string, password: string) => {
@@ -51,11 +67,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return null
 
     if (hasSupabaseConfig()) {
-      const { error } = await supabase.auth.signInWithPassword({
+      // Intentar login primero
+      let { data, error } = await supabase.auth.signInWithPassword({
         email: user.email,
         password,
       })
-      if (error) {
+      if (error && error.message.includes('Invalid login credentials')) {
+        // Si no existe, registrar automáticamente
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: user.email,
+          password,
+          options: {
+            data: {
+              studentId: user.studentId,
+              name: user.name,
+              role: user.role,
+            },
+          },
+        })
+        if (signUpError) return null
+        // Intentar login de nuevo después del registro
+        const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+          email: user.email,
+          password,
+        })
+        if (loginError) return null
+      } else if (error) {
         return null
       }
     } else {
