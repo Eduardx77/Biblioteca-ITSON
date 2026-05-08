@@ -1,0 +1,266 @@
+export type UserRole = "student" | "admin"
+
+export interface User {
+  id: string
+  name: string
+  email: string
+  studentId: string
+  role: UserRole
+  password: string
+}
+
+export type ResourceType = "cubicle" | "computer"
+export type ResourceStatus = "available" | "reserved" | "in-use" | "maintenance"
+
+export interface Resource {
+  id: string
+  name: string
+  type: ResourceType
+  status: ResourceStatus
+  location: string
+}
+
+export type ReservationStatus = "active" | "completed" | "cancelled" | "in-use"
+
+export interface Reservation {
+  id: string
+  userId: string
+  resourceId: string
+  date: string
+  startTime: string
+  endTime: string
+  status: ReservationStatus
+  createdAt: string
+}
+
+export interface Notification {
+  id: string
+  userId: string
+  message: string
+  read: boolean
+  createdAt: string
+  type: "reminder" | "confirmation" | "cancellation" | "warning"
+}
+
+// Default data
+const defaultResources: Resource[] = [
+  { id: "c1", name: "Cubiculo 1", type: "cubicle", status: "available", location: "Planta Baja - Zona A" },
+  { id: "c2", name: "Cubiculo 2", type: "cubicle", status: "available", location: "Planta Baja - Zona A" },
+  { id: "c3", name: "Cubiculo 3", type: "cubicle", status: "available", location: "Planta Baja - Zona B" },
+  { id: "c4", name: "Cubiculo 4", type: "cubicle", status: "maintenance", location: "Planta Baja - Zona B" },
+  { id: "c5", name: "Cubiculo 5", type: "cubicle", status: "available", location: "Primer Piso - Zona A" },
+  { id: "c6", name: "Cubiculo 6", type: "cubicle", status: "available", location: "Primer Piso - Zona A" },
+  { id: "p1", name: "PC-01", type: "computer", status: "available", location: "Sala de Computo 1" },
+  { id: "p2", name: "PC-02", type: "computer", status: "available", location: "Sala de Computo 1" },
+  { id: "p3", name: "PC-03", type: "computer", status: "available", location: "Sala de Computo 1" },
+  { id: "p4", name: "PC-04", type: "computer", status: "available", location: "Sala de Computo 2" },
+  { id: "p5", name: "PC-05", type: "computer", status: "available", location: "Sala de Computo 2" },
+  { id: "p6", name: "PC-06", type: "computer", status: "available", location: "Sala de Computo 2" },
+  { id: "p7", name: "PC-07", type: "computer", status: "in-use", location: "Sala de Computo 3" },
+  { id: "p8", name: "PC-08", type: "computer", status: "available", location: "Sala de Computo 3" },
+]
+
+const defaultUsers: User[] = [
+  { id: "u1", name: "Carlos Lopez", email: "carlos.lopez@itson.edu.mx", studentId: "000123456", role: "student", password: "123456" },
+  { id: "u2", name: "Maria Garcia", email: "maria.garcia@itson.edu.mx", studentId: "000654321", role: "student", password: "123456" },
+  { id: "admin1", name: "Admin Biblioteca", email: "admin@itson.edu.mx", studentId: "ADMIN001", role: "admin", password: "admin123" },
+]
+
+function getFromStorage<T>(key: string, defaultValue: T): T {
+  if (typeof window === "undefined") return defaultValue
+  try {
+    const stored = localStorage.getItem(key)
+    if (stored) return JSON.parse(stored) as T
+  } catch {}
+  return defaultValue
+}
+
+function saveToStorage<T>(key: string, value: T): void {
+  if (typeof window === "undefined") return
+  localStorage.setItem(key, JSON.stringify(value))
+}
+
+export function getResources(): Resource[] {
+  return getFromStorage("itson_resources", defaultResources)
+}
+
+export function saveResources(resources: Resource[]): void {
+  saveToStorage("itson_resources", resources)
+}
+
+export function getUsers(): User[] {
+  return getFromStorage("itson_users", defaultUsers)
+}
+
+export function saveUsers(users: User[]): void {
+  saveToStorage("itson_users", users)
+}
+
+export function getReservations(): Reservation[] {
+  return getFromStorage<Reservation[]>("itson_reservations", [])
+}
+
+export function saveReservations(reservations: Reservation[]): void {
+  saveToStorage("itson_reservations", reservations)
+}
+
+export function getNotifications(userId: string): Notification[] {
+  const all = getFromStorage<Notification[]>("itson_notifications", [])
+  return all.filter((n) => n.userId === userId)
+}
+
+export function addNotification(notification: Omit<Notification, "id" | "createdAt" | "read">): void {
+  const all = getFromStorage<Notification[]>("itson_notifications", [])
+  all.push({
+    ...notification,
+    id: `notif_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+    read: false,
+    createdAt: new Date().toISOString(),
+  })
+  saveToStorage("itson_notifications", all)
+}
+
+export function markNotificationRead(notifId: string): void {
+  const all = getFromStorage<Notification[]>("itson_notifications", [])
+  const updated = all.map((n) => (n.id === notifId ? { ...n, read: true } : n))
+  saveToStorage("itson_notifications", updated)
+}
+
+export function markAllNotificationsRead(userId: string): void {
+  const all = getFromStorage<Notification[]>("itson_notifications", [])
+  const updated = all.map((n) => (n.userId === userId ? { ...n, read: true } : n))
+  saveToStorage("itson_notifications", updated)
+}
+
+export function createReservation(
+  userId: string,
+  resourceId: string,
+  date: string,
+  startTime: string,
+  endTime: string
+): Reservation {
+  const reservations = getReservations()
+  const newRes: Reservation = {
+    id: `res_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+    userId,
+    resourceId,
+    date,
+    startTime,
+    endTime,
+    status: "active",
+    createdAt: new Date().toISOString(),
+  }
+  reservations.push(newRes)
+  saveReservations(reservations)
+
+  const resources = getResources()
+  const resource = resources.find((r) => r.id === resourceId)
+
+  addNotification({
+    userId,
+    message: `Reservacion confirmada: ${resource?.name ?? resourceId} el ${date} de ${startTime} a ${endTime}.`,
+    type: "confirmation",
+  })
+
+  return newRes
+}
+
+export function cancelReservation(reservationId: string): void {
+  const reservations = getReservations()
+  const reservation = reservations.find((r) => r.id === reservationId)
+  if (!reservation) return
+
+  const updated = reservations.map((r) =>
+    r.id === reservationId ? { ...r, status: "cancelled" as const } : r
+  )
+  saveReservations(updated)
+
+  const resources = getResources()
+  const resource = resources.find((r) => r.id === reservation.resourceId)
+  if (resource && resource.status === "reserved") {
+    const updatedResources = resources.map((r) =>
+      r.id === reservation.resourceId ? { ...r, status: "available" as const } : r
+    )
+    saveResources(updatedResources)
+  }
+
+  addNotification({
+    userId: reservation.userId,
+    message: `Reservacion cancelada: ${resource?.name ?? reservation.resourceId} el ${reservation.date}.`,
+    type: "cancellation",
+  })
+}
+
+export function startResourceUse(reservationId: string): void {
+  const reservations = getReservations()
+  const updated = reservations.map((r) =>
+    r.id === reservationId ? { ...r, status: "in-use" as const } : r
+  )
+  saveReservations(updated)
+
+  const reservation = reservations.find((r) => r.id === reservationId)
+  if (reservation) {
+    const resources = getResources()
+    const updatedResources = resources.map((r) =>
+      r.id === reservation.resourceId ? { ...r, status: "in-use" as const } : r
+    )
+    saveResources(updatedResources)
+  }
+}
+
+export function endResourceUse(reservationId: string): void {
+  const reservations = getReservations()
+  const updated = reservations.map((r) =>
+    r.id === reservationId ? { ...r, status: "completed" as const } : r
+  )
+  saveReservations(updated)
+
+  const reservation = reservations.find((r) => r.id === reservationId)
+  if (reservation) {
+    const resources = getResources()
+    const updatedResources = resources.map((r) =>
+      r.id === reservation.resourceId ? { ...r, status: "available" as const } : r
+    )
+    saveResources(updatedResources)
+  }
+}
+
+export function isResourceAvailable(
+  resourceId: string,
+  date: string,
+  startTime: string,
+  endTime: string
+): boolean {
+  const reservations = getReservations()
+  const conflicting = reservations.filter(
+    (r) =>
+      r.resourceId === resourceId &&
+      r.date === date &&
+      r.status !== "cancelled" &&
+      r.status !== "completed" &&
+      ((startTime >= r.startTime && startTime < r.endTime) ||
+        (endTime > r.startTime && endTime <= r.endTime) ||
+        (startTime <= r.startTime && endTime >= r.endTime))
+  )
+  return conflicting.length === 0
+}
+
+export function getCurrentUser(): User | null {
+  return getFromStorage<User | null>("itson_current_user", null)
+}
+
+export function loginUser(email: string, password: string): User | null {
+  const users = getUsers()
+  const user = users.find((u) => u.email === email && u.password === password)
+  if (user) {
+    saveToStorage("itson_current_user", user)
+    return user
+  }
+  return null
+}
+
+export function logoutUser(): void {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("itson_current_user")
+  }
+}
