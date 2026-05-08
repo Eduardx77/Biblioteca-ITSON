@@ -22,7 +22,7 @@ export function LoginForm() {
 
   useEffect(() => {
     if (typeof window === "undefined") return
-    const savedIdentifier = localStorage.getItem("itson_saved_id") || ""
+    const savedIdentifier = localStorage.getItem("itson_saved_email") || ""
     const savedPassword = localStorage.getItem("itson_saved_password") || ""
     setIdentifier(savedIdentifier)
     setPassword(savedPassword)
@@ -38,7 +38,7 @@ export function LoginForm() {
     }
 
     if (typeof window !== "undefined") {
-      localStorage.setItem("itson_saved_id", identifier)
+      localStorage.setItem("itson_saved_email", identifier)
       localStorage.setItem("itson_saved_password", password)
     }
   }
@@ -50,7 +50,7 @@ export function LoginForm() {
 
     const target = resetIdentifier || identifier
     if (!target) {
-      setResetError("Ingresa tu ID o correo para restablecer la contraseña.")
+      setResetError("Ingresa tu correo electrónico para restablecer la contraseña.")
       return
     }
 
@@ -95,11 +95,11 @@ export function LoginForm() {
                 </div>
               )}
               <div className="flex flex-col gap-2">
-                <Label htmlFor="identifier">ID de estudiante</Label>
+                <Label htmlFor="identifier">Correo electrónico</Label>
                 <Input
                   id="identifier"
-                  type="text"
-                  placeholder="00000123456"
+                  type="email"
+                  placeholder="nombre.apellido@potros.itson.edu.mx"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   required
@@ -125,14 +125,14 @@ export function LoginForm() {
               {forgotMode ? (
                 <form onSubmit={handleResetPassword} className="space-y-3">
                   <p className="text-sm text-muted-foreground">
-                    Ingresa tu ID o correo para recibir el enlace de restablecimiento.
+                    Ingresa tu correo electrónico para recibir el enlace de restablecimiento.
                   </p>
                   <div className="flex flex-col gap-2">
-                    <Label htmlFor="resetIdentifier">ID o correo</Label>
+                    <Label htmlFor="resetIdentifier">Correo electrónico</Label>
                     <Input
                       id="resetIdentifier"
-                      type="text"
-                      placeholder="00000123456 o usuario@itson.edu.mx"
+                      type="email"
+                      placeholder="nombre.apellido@potros.itson.edu.mx"
                       value={resetIdentifier}
                       onChange={(e) => setResetIdentifier(e.target.value)}
                     />
