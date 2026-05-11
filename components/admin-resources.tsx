@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getResources, saveResources, type Resource, type ResourceStatus, type ResourceType } from "@/lib/store"
+import { saveResources, type Resource, type ResourceStatus, type ResourceType } from "@/lib/store"
+import { supabase, hasSupabaseConfig } from "@/lib/supabase-client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -39,7 +40,33 @@ export function AdminResources() {
   const [form, setForm] = useState({ name: "", type: "cubicle" as ResourceType, location: "", status: "available" as ResourceStatus })
 
   useEffect(() => {
-    setResources(getResources())
+    async function loadResources() {
+      if (hasSupabaseConfig()) {
+        try {
+          const { data, error } = await supabase
+            .from("resources")
+            .select("id,name,type,status,location,capacity")
+            .order("id")
+          
+          if (!error && data) {
+            const resources = data.map((r: any) => ({
+              id: r.id,
+              name: r.name,
+              type: r.type as ResourceType,
+              status: r.status as ResourceStatus,
+              location: r.location,
+              capacity: r.capacity,
+            }))
+            setResources(resources)
+            return
+          }
+        } catch (err) {
+          console.error("Error loading resources from Supabase:", err)
+        }
+      }
+    }
+
+    loadResources()
   }, [])
 
   function openNew() {

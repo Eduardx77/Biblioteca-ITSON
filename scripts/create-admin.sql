@@ -1,0 +1,66 @@
+-- Crear usuario admin en auth.users
+INSERT INTO auth.users (
+  id, 
+  instance_id, 
+  aud, 
+  role, 
+  email, 
+  encrypted_password, 
+  email_confirmed_at, 
+  last_sign_in_at, 
+  raw_app_meta_data, 
+  raw_user_meta_data, 
+  is_super_admin, 
+  created_at, 
+  updated_at, 
+  phone, 
+  phone_confirmed_at, 
+  confirmation_token, 
+  recovery_token, 
+  email_change_token_new, 
+  email_change, 
+  confirmation_sent_at, 
+  email_change_sent_at, 
+  recovery_sent_at, 
+  banned_until, 
+  reauthentication_sent_at, 
+  is_sso_user, 
+  deleted_at
+) VALUES (
+  '550e8400-e29b-41d4-a716-446655440001'::uuid,
+  '00000000-0000-0000-0000-000000000000'::uuid,
+  'authenticated',
+  'authenticated',
+  'admin@potros.itson.edu.mx',
+  crypt('Admin1234', gen_salt('bf')),
+  now(),
+  now(),
+  '{}',
+  '{"name":"Administrador","studentId":"ADMIN001","role":"admin"}',
+  false,
+  now(),
+  now(),
+  NULL,
+  NULL,
+  '',
+  '',
+  '',
+  '',
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  false,
+  NULL
+);
+
+-- Crear perfil en la tabla profiles
+INSERT INTO profiles (id, email, student_id, name, role)
+VALUES (
+  '550e8400-e29b-41d4-a716-446655440001'::uuid,
+  'admin@potros.itson.edu.mx',
+  'ADMIN001',
+  'Administrador',
+  'admin'
+);

@@ -5,10 +5,12 @@ import { LoginForm } from "@/components/login-form"
 import { StudentDashboard } from "@/components/student-dashboard"
 import { AdminDashboard } from "@/components/admin-dashboard"
 import { AppHeader } from "@/components/app-header"
+import { SessionWarning } from "@/components/session-warning"
+import { VersionChecker } from "@/components/version-checker"
 import { Toaster } from "@/components/ui/sonner"
 
 function AppContent() {
-  const { user, loading } = useAuth()
+  const { user, loading, sessionValid } = useAuth()
 
   if (loading) {
     return (
@@ -21,7 +23,7 @@ function AppContent() {
     )
   }
 
-  if (!user) {
+  if (!user || !sessionValid) {
     return <LoginForm />
   }
 
@@ -31,6 +33,7 @@ function AppContent() {
       <main>
         {user.role === "admin" ? <AdminDashboard /> : <StudentDashboard />}
       </main>
+      <SessionWarning />
     </div>
   )
 }
@@ -38,6 +41,7 @@ function AppContent() {
 export default function Page() {
   return (
     <AuthProvider>
+      <VersionChecker />
       <AppContent />
       <Toaster />
     </AuthProvider>

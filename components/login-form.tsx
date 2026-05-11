@@ -19,6 +19,7 @@ export function LoginForm() {
   const [resetIdentifier, setResetIdentifier] = useState("")
   const [resetStatus, setResetStatus] = useState("")
   const [resetError, setResetError] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -31,15 +32,29 @@ export function LoginForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError("")
-    const user = await login(identifier, password)
-    if (!user) {
-      setError("Credenciales incorrectas. Intenta de nuevo.")
+    setIsSubmitting(true)
+    if (!identifier.toLowerCase().endsWith("@potros.itson.edu.mx")) {
+      setError("Solo se permite correo @potros.itson.edu.mx")
+      setIsSubmitting(false)
       return
     }
 
-    if (typeof window !== "undefined") {
-      localStorage.setItem("itson_saved_email", identifier)
-      localStorage.setItem("itson_saved_password", password)
+    try {
+      const user = await login(identifier, password)
+      if (!user) {
+        setError("Credenciales incorrectas. Intenta de nuevo.")
+        return
+      }
+
+      if (typeof window !== "undefined") {
+        localStorage.setItem("itson_saved_email", identifier)
+        localStorage.setItem("itson_saved_password", password)
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Error al iniciar sesión"
+      setError(message)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -116,8 +131,8 @@ export function LoginForm() {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Iniciar Sesión
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? "Iniciando..." : "Iniciar Sesión"}
               </Button>
             </form>
 

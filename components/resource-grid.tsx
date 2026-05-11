@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { getResources, type Resource, type ResourceType } from "@/lib/store"
+import { type Resource, type ResourceType, type ResourceStatus } from "@/lib/store"
+import { supabase, hasSupabaseConfig } from "@/lib/supabase-client"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -31,11 +32,34 @@ export function ResourceGrid({ onReserve }: ResourceGridProps) {
   const [filter, setFilter] = useState<"all" | ResourceType>("all")
 
   useEffect(() => {
-    function refresh() {
-      setResources(getResources())
+    async function loadResources() {
+      if (hasSupabaseConfig()) {
+        try {
+          const { data, error } = await supabase
+            .from("resources")
+            .select("id,name,type,status,location,capacity")
+            .order("id")
+          
+          if (!error && data) {
+            const resources = data.map((r: any) => ({
+              id: r.id,
+              name: r.name,
+              type: r.type as ResourceType,
+              status: r.status as ResourceStatus,
+              location: r.location,
+              capacity: r.capacity,
+            }))
+            setResources(resources)
+            return
+          }
+        } catch (err) {
+          console.error("Error loading resources from Supabase:", err)
+        }
+      }
     }
-    refresh()
-    const interval = setInterval(refresh, 3000)
+
+    loadResources()
+    const interval = setInterval(loadResources, 3000)
     return () => clearInterval(interval)
   }, [])
 
